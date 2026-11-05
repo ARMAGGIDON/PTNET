@@ -4,4 +4,5 @@
     <Project Path="lab02DLL/lab02DLL.csproj" Id="599009f5-8e1f-4a22-977b-7791f3fe3a0b" />
     <Project Path="lab03/lab03.csproj" />
     <Project Path="lab04/lab04.csproj" />
+    <Project Path="lab05/lab05.csproj" />
 </Solution>
