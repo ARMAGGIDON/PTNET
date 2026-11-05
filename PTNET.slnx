@@ -1,3 +1,5 @@
 <Solution>
     <Project Path="lab01/lab01.csproj" />
+    <Project Path="lab02/lab02.csproj" Id="78b51228-6965-4644-96f7-7fbd04ef3f14" />
+    <Project Path="lab02DLL/lab02DLL.csproj" Id="599009f5-8e1f-4a22-977b-7791f3fe3a0b" />
 </Solution>
