@@ -1,0 +1,36 @@
+@page
+@model lab07.Pages.IndexModel
+@{
+    ViewData["Title"] = "Завдання 1";
+}
+<section>
+    <h1>Завдання 1 — варіант 8</h1>
+    <p>Уведіть прізвище, ім’я, по батькові та email.</p>
+    <form method="post">
+        <label asp-for="Surname">Прізвище</label>
+        <input asp-for="Surname" required/>
+        <label asp-for="FirstName">Ім’я</label>
+        <input asp-for="FirstName" required/>
+        <label asp-for="Patronymic">По батькові</label>
+        <input asp-for="Patronymic" required/>
+        <label asp-for="Email">Email</label>
+        <input asp-for="Email" type="text" required/>
+        <button type="submit">Обробити</button>
+    </form>
+
+    @if (Model.ErrorMessage is not null) {
+        <div class="message error">@Model.ErrorMessage</div>
+    }
+    @if (Model.HasResult) {
+        <div class="message" role="status">
+            <strong>Ім’я у стовпець:</strong>
+            <div class="column-name">
+                @foreach (char letter in Model.NameLetters) {
+                    <div>@letter</div>
+                }
+            </div>
+            <p><strong>Ініціали:</strong> @Model.Initials</p>
+            <p><strong>Перевірка email:</strong> @Model.EmailResult</p>
+        </div>
+    }
+</section>

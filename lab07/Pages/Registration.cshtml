@@ -1,0 +1,33 @@
+@page
+@model lab07.Pages.RegistrationModel
+@{
+    ViewData["Title"] = "Завдання 2";
+}
+<section>
+    <h1>Завдання 2 — реєстрація</h1>
+    <p>Заповніть анкету та введіть логін і пароль, записані у текстових файлах.</p>
+    <p class="hint">Для перевірки: логін <code>student</code>, пароль <code>12345</code>.
+        Дозволено 3 невдалі спроби протягом одного сеансу браузера.</p>
+    <form method="post">
+        <label asp-for="Surname">Прізвище</label>
+        <input asp-for="Surname" required/>
+        <label asp-for="FirstName">Ім’я</label>
+        <input asp-for="FirstName" required/>
+        <label asp-for="Patronymic">По батькові</label>
+        <input asp-for="Patronymic" required/>
+        <label asp-for="Email">Email</label>
+        <input asp-for="Email" type="email" required/>
+        <label asp-for="Login">Логін</label>
+        <input asp-for="Login" required/>
+        <label for="Password">Пароль</label>
+        <input id="Password" name="Password" type="password" required/>
+        <button type="submit" disabled="@Model.IsBlocked">Зареєструватися</button>
+    </form>
+
+    @if (Model.Message is not null) {
+        <div class="message @(Model.IsSuccess ? "success" : "error")" role="status">@Model.Message</div>
+    }
+    @if (!Model.IsSuccess) {
+        <p class="hint">Невдалих спроб: @Model.FailedAttempts / @Model.MaxAttempts.</p>
+    }
+</section>
