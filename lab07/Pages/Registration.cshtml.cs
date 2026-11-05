@@ -71,6 +71,9 @@ public class RegistrationModel(IWebHostEnvironment environment) : PageModel {
         IsSuccess = true;
         Message = "Реєстрацію успішно завершено! Анкету збережено у AppData/registrations.txt.";
         return Page();
-        string Clean(string value) => value.Replace("\r", " ").Replace("\n", " ");
+    }
+
+    private static string Clean(string value) {
+        return value.Replace("\r", " ").Replace("\n", " ");
     }
 }
