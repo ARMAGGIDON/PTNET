@@ -4,20 +4,6 @@
         <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-        <UserSecretsId>aspnet-lab07-717b703d-8013-4bb0-90dc-a08a19cc0f1d</UserSecretsId>
     </PropertyGroup>
-
-    <ItemGroup>
-        <None Update="app.db" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true"/>
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.11"/>
-        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.11"/>
-        <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="10.0.11"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11" PrivateAssets="all"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.11"/>
-    </ItemGroup>
 
 </Project>
