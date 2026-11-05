@@ -6,9 +6,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace lab07.Pages;
 
 public class RegistrationModel(IWebHostEnvironment environment) : PageModel {
-    private const string AttemptsKey = "lab07_failed_attempts";
     public int MaxAttempts => 3;
-    public int FailedAttempts => HttpContext.Session.GetInt32(AttemptsKey) ?? 0;
+    public int FailedAttempts => HttpContext.Session.GetInt32(SessionResetModel.AttemptsKey) ?? 0;
     public bool IsBlocked => FailedAttempts >= MaxAttempts;
 
     [BindProperty] public string Surname { get; set; } = "";
@@ -39,20 +38,19 @@ public class RegistrationModel(IWebHostEnvironment environment) : PageModel {
             return Page();
         }
 
-        string directory = Path.Combine(environment.ContentRootPath, "App_Data");
-        string loginFile = Path.Combine(directory, "login.txt");
-        string passwordFile = Path.Combine(directory, "pass.txt");
+        var directory = Path.Combine(environment.ContentRootPath, "AppData");
+        var loginFile = Path.Combine(directory, "login.txt");
+        var passwordFile = Path.Combine(directory, "pass.txt");
 
         if (!System.IO.File.Exists(loginFile) || !System.IO.File.Exists(passwordFile)) {
             Message = "Не знайдено файли login.txt або pass.txt.";
             return Page();
         }
 
-        string expectedLogin = (await System.IO.File.ReadAllTextAsync(loginFile)).Trim();
-        string expectedPassword = (await System.IO.File.ReadAllTextAsync(passwordFile)).Trim();
-
-        if (Login != expectedLogin || Password != expectedPassword) {
-            HttpContext.Session.SetInt32(AttemptsKey, FailedAttempts + 1);
+        var rawLogin = await System.IO.File.ReadAllTextAsync(loginFile);
+        var rawPassword = await System.IO.File.ReadAllTextAsync(passwordFile);
+        if (Login != rawLogin.Trim() || Password != rawPassword.Trim()) {
+            HttpContext.Session.SetInt32(SessionResetModel.AttemptsKey, FailedAttempts + 1);
             Message = IsBlocked
                 ? "Три невдалі спроби. Подальшу реєстрацію заблоковано до завершення сеансу."
                 : $"Неправильний логін або пароль. Залишилося спроб: {MaxAttempts - FailedAttempts}.";
@@ -60,19 +58,19 @@ public class RegistrationModel(IWebHostEnvironment environment) : PageModel {
         }
 
         Directory.CreateDirectory(directory);
-        string Clean(string value) => value.Replace("\r", " ").Replace("\n", " ");
-        string record = $"Дата: {DateTime.Now:yyyy-MM-dd HH:mm:ss}{Environment.NewLine}" +
-                        $"Прізвище: {Clean(Surname)}{Environment.NewLine}" +
-                        $"Ім’я: {Clean(FirstName)}{Environment.NewLine}" +
-                        $"По батькові: {Clean(Patronymic)}{Environment.NewLine}" +
-                        $"Email: {Clean(Email)}{Environment.NewLine}" +
-                        $"Логін: {Clean(Login)}{Environment.NewLine}---{Environment.NewLine}";
-        await System.IO.File.AppendAllTextAsync(Path.Combine(directory, "registrations.txt"), record, Encoding.UTF8);
+        await System.IO.File.AppendAllTextAsync(Path.Combine(directory, "registrations.txt"), 
+            $"Дата: {DateTime.Now:yyyy-MM-dd HH:mm:ss}{Environment.NewLine}" +
+                    $"Прізвище: {Clean(Surname)}{Environment.NewLine}" +
+                    $"Ім’я: {Clean(FirstName)}{Environment.NewLine}" +
+                    $"По батькові: {Clean(Patronymic)}{Environment.NewLine}" +
+                    $"Email: {Clean(Email)}{Environment.NewLine}" +
+                    $"Логін: {Clean(Login)}{Environment.NewLine}---{Environment.NewLine}", Encoding.UTF8);
 
-        HttpContext.Session.Remove(AttemptsKey);
+        HttpContext.Session.Remove(SessionResetModel.AttemptsKey);
         Password = "";
         IsSuccess = true;
-        Message = "Реєстрацію успішно завершено! Анкету збережено у App_Data/registrations.txt.";
+        Message = "Реєстрацію успішно завершено! Анкету збережено у AppData/registrations.txt.";
         return Page();
+        string Clean(string value) => value.Replace("\r", " ").Replace("\n", " ");
     }
 }

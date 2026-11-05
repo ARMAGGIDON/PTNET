@@ -14,5 +14,6 @@ app.UseHttpsRedirection();
 app.UseRouting();
 app.UseSession();
 app.MapRazorPages();
+app.UseStaticFiles();
 
 app.Run();

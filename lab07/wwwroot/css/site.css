@@ -1,0 +1,180 @@
+/* Оголошуємо змінні для кольорів та анімацій */
+:root {
+    --primary: #4361ee;
+    --primary-hover: #3a0ca3;
+    --bg: #f4f7fe;
+    --surface: #ffffff;
+    --text-main: #2b3674;
+    --text-muted: #a3aed1;
+    --border: #e2e8f0;
+    --error-bg: #fee2e2;
+    --error-text: #b91c1c;
+    --success-bg: #dcfce7;
+    --success-text: #15803d;
+    --shadow: 0 10px 30px rgba(67, 97, 238, 0.08);
+    --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* { box-sizing: border-box; }
+
+body {
+    padding-top: 80px;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text-main);
+    font: 16px/1.6 "Segoe UI", system-ui, sans-serif;
+}
+
+/* --- Навігація --- */
+header {
+    position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px); /* Розмиття фону під хедером */
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: var(--transition);
+}
+
+nav {
+    display: flex; align-items: center; gap: 32px; max-width: 860px; margin: auto; padding: 18px 20px;
+}
+
+a {
+    color: var(--text-main);
+    text-decoration: none;
+    font-weight: 600;
+    position: relative;
+    transition: color var(--transition);
+}
+
+/* Анімоване підкреслення посилань */
+a::after {
+    content: '';
+    position: absolute;
+    width: 0; height: 2px;
+    bottom: -4px; left: 0;
+    background-color: var(--primary);
+    transition: width var(--transition);
+}
+
+a:hover { color: var(--primary); }
+a:hover::after { width: 100%; }
+
+/* --- Основний контент та картки --- */
+main { max-width: 860px; margin: 20px auto; padding: 0 20px; }
+
+section {
+    background: var(--surface);
+    padding: 32px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    animation: slideUp 0.5s ease-out forwards; /* Анімація появи секції */
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+h1 { margin-top: 0; font-size: 1.8rem; color: var(--text-main); margin-bottom: 8px;}
+p { color: #64748b; margin-top: 0; margin-bottom: 24px; }
+
+/* --- Форми --- */
+label {
+    display: block; font-weight: 600; margin: 16px 0 8px; font-size: 0.95rem;
+}
+
+input {
+    display: block; width: 100%; max-width: 480px; padding: 12px 16px; font: inherit;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: #f8fafc;
+    transition: var(--transition);
+}
+
+/* Ефект при фокусі на інпут */
+input:focus {
+    border-color: var(--primary);
+    background: #fff;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
+}
+
+/* --- Кнопки --- */
+button {
+    margin-top: 24px; padding: 12px 24px;
+    background: var(--primary); color: #fff; border: 0;
+    border-radius: 8px; cursor: pointer; font: inherit; font-weight: 600;
+    transition: var(--transition);
+    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+}
+
+/* Анімація натискання та наведення */
+button:hover:not(:disabled) {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(67, 97, 238, 0.4);
+}
+button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+button:disabled {
+    background: #cbd5e1; box-shadow: none; cursor: not-allowed; transform: none;
+}
+
+/* --- Блоки повідомлень та результатів --- */
+.message {
+    margin-top: 24px;
+    padding: 16px;
+    border-radius: 8px;
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    background: #f1f5f9;
+    border-left: 4px solid var(--primary);
+}
+
+.message.error {
+    background: var(--error-bg);
+    color: var(--error-text);
+    border-left-color: var(--error-text);
+}
+
+.message.success {
+    background: var(--success-bg);
+    color: var(--success-text);
+    border-left-color: var(--success-text);
+}
+
+.hint {
+    font-size: 0.9rem;
+    color: var(--error-text);
+    margin-top: 12px;
+    font-weight: 500;
+}
+
+/* Стилізація стовпця з літерами (Завдання 1) */
+.column-name {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 12px 0;
+    padding: 12px;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+.column-name div {
+    font-weight: 700;
+    color: var(--primary);
+    text-align: center;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+}
+
+/* --- Keyframes (Анімації) --- */
+@keyframes slideUp {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popIn {
+    0% { opacity: 0; transform: scale(0.95) translateY(10px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
