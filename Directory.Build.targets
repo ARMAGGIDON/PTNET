@@ -1,0 +1,7 @@
+<Project>
+    <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
+        <None Update="*.pdf;*.docx;task*.md">
+            <Link>labInfo\%(Filename)%(Extension)</Link>
+        </None>
+    </ItemGroup>
+</Project>
