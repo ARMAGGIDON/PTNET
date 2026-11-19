@@ -3,16 +3,16 @@ using Microsoft.Data.SqlClient;
 
 namespace lab08.Data;
 
+
 // ADO.NET, приєднана модель: SqlConnection + SqlCommand + SqlDataReader.
 internal sealed class DiscRepository {
     private readonly string _connectionString;
-    private readonly string _database;
 
     public string Server { get; }
-    public string Database => _database;
+    public string Database { get; }
 
     public DiscRepository() {
-        string? configured = Environment.GetEnvironmentVariable("PTNET_LAB08_CONNECTION");
+        var configured = Environment.GetEnvironmentVariable("PTNET_LAB08_CONNECTION");
         SqlConnectionStringBuilder builder;
 
         if (string.IsNullOrWhiteSpace(configured)) {
@@ -29,7 +29,7 @@ internal sealed class DiscRepository {
             if (string.IsNullOrWhiteSpace(builder.InitialCatalog)) builder.InitialCatalog = "PTNET_Lab08";
         }
 
-        _database = builder.InitialCatalog;
+        Database = builder.InitialCatalog;
         Server = builder.DataSource;
         _connectionString = builder.ConnectionString;
     }
@@ -40,9 +40,9 @@ internal sealed class DiscRepository {
             master.Open();
 
             using var check = new SqlCommand("SELECT DB_ID(@name)", master);
-            check.Parameters.Add("@name", SqlDbType.NVarChar, 128).Value = _database;
+            check.Parameters.Add("@name", SqlDbType.NVarChar, 128).Value = Database;
             if (check.ExecuteScalar() is DBNull) {
-                string quotedName = "[" + _database.Replace("]", "]]") + "]";
+                var quotedName = "[" + Database.Replace("]", "]]") + "]";
                 using var create = new SqlCommand($"CREATE DATABASE {quotedName}", master);
                 create.ExecuteNonQuery();
             }
@@ -72,6 +72,7 @@ internal sealed class DiscRepository {
         if (!tableWasMissing) return;
 
         using var transaction = connection.BeginTransaction();
+        
         {
             Disc[] samples = [
                 new(1, "Програмування", "C# для початківців", 2020, 199.99m),
@@ -80,7 +81,7 @@ internal sealed class DiscRepository {
                 new(4, "Ігри", "Ретро-ігри: збірка", 2018, 299.00m),
                 new(5, "Наука", "Космос і планети", 2023, 179.90m)
             ];
-            foreach (Disc disc in samples) InsertInternal(connection, transaction, disc);
+            foreach (var disc in samples) InsertInternal(connection, transaction, disc);
         }
         transaction.Commit();
     }
@@ -88,9 +89,11 @@ internal sealed class DiscRepository {
     public List<Disc> GetAll() {
         using var connection = Open();
         using var command = new SqlCommand("""
-            SELECT Code, Topic, Title, ReleaseYear, Price FROM dbo.Discs ORDER BY Code
+            SELECT Code, Topic, Title, ReleaseYear, Price
+            FROM dbo.Discs
+            ORDER BY Code
             """, connection);
-        using SqlDataReader reader = command.ExecuteReader();
+        using var reader = command.ExecuteReader();
         List<Disc> discs = [];
         while (reader.Read()) {
             discs.Add(new Disc(reader.GetInt32(0), reader.GetString(1), reader.GetString(2),

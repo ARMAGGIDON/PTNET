@@ -4,6 +4,7 @@ using lab08.Data;
 
 namespace lab08.Tui;
 
+
 internal sealed class CatalogApp {
     private const int PageSize = 14;
     private const int FieldWidth = 53;
@@ -38,13 +39,11 @@ internal sealed class CatalogApp {
     }
 
     public void Run() {
-        bool tooSmall = false;
+        var tooSmall = false;
         int lastWidth = -1, lastHeight = -1;
-
         while (!_quit) {
             int width = Console.WindowWidth, height = Console.WindowHeight;
-
-            if (!_canvas.Fits) {
+            if (!TerminalCanvas.Fits) {
                 if (!tooSmall || width != lastWidth || height != lastHeight) _canvas.ShowSizeWarning();
                 tooSmall = true;
                 lastWidth = width;
@@ -61,19 +60,17 @@ internal sealed class CatalogApp {
             }
 
             if (!_canvas.IsReserved) _canvas.Reserve();
-
             if (_needsPaint) {
                 try {
                     Draw();
                     _needsPaint = false;
                 } catch (ArgumentOutOfRangeException) {
-                    // Розмір вікна міг змінитися посеред кадру.
                     _canvas.Invalidate();
                 }
             }
 
             if (Console.KeyAvailable) {
-                ConsoleKeyInfo key = Console.ReadKey(intercept: true);
+                var key = Console.ReadKey(intercept: true);
                 try {
                     HandleKey(key);
                 } catch (SqlException ex) {
@@ -160,10 +157,9 @@ internal sealed class CatalogApp {
                     _caret = _fields[_focus].Length;
                     return;
                 case ConsoleKey.Backspace:
-                    if (_caret > 0) {
-                        _fields[_focus] = _fields[_focus].Remove(_caret - 1, 1);
-                        _caret--;
-                    }
+                    if (_caret <= 0) return;
+                    _fields[_focus] = _fields[_focus].Remove(_caret - 1, 1);
+                    _caret--;
                     return;
                 case ConsoleKey.Delete:
                     if (_caret < _fields[_focus].Length)
@@ -178,7 +174,7 @@ internal sealed class CatalogApp {
             }
 
             if (char.IsControl(key.KeyChar) || !Permitted(_focus, key.KeyChar)) return;
-            int limit = _focus switch { 1 => 100, 2 => 150, _ => 32 };
+            var limit = _focus switch { 1 => 100, 2 => 150, _ => 32 };
             if (_fields[_focus].Length >= limit) return;
 
             _fields[_focus] = _fields[_focus].Insert(_caret, key.KeyChar.ToString());
@@ -241,7 +237,7 @@ internal sealed class CatalogApp {
             return;
         }
 
-        int affected = _originalCode is { } oldCode
+        var affected = _originalCode is { } oldCode
             ? _repository.Update(oldCode, disc!)
             : _repository.Insert(disc!);
 
@@ -253,7 +249,6 @@ internal sealed class CatalogApp {
     private bool TryReadDisc(out Disc? disc, out string error) {
         disc = null;
         error = "";
-
         if (!int.TryParse(_fields[0].Trim(), out int code) || code <= 0) {
             error = "Код має бути додатним цілим числом.";
         } else if (string.IsNullOrWhiteSpace(_fields[1]) || _fields[1].Length > 100) {
@@ -263,7 +258,7 @@ internal sealed class CatalogApp {
         } else if (!int.TryParse(_fields[3].Trim(), out int year) || year is < 1900 or > 2100) {
             error = "Рік видання має бути в межах 1900–2100.";
         } else if (!decimal.TryParse(_fields[4].Trim().Replace(',', '.'),
-                       NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal price) ||
+                       NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var price) ||
                    price < 0 || price > 99999999.99m || decimal.Round(price, 2) != price) {
             error = "Вартість: невід'ємне число з максимум 2 знаками після крапки.";
         } else {
@@ -297,14 +292,13 @@ internal sealed class CatalogApp {
     private void Refresh(int? selectCode = null) {
         _discs = _repository.GetAll();
         if (selectCode is { } code) {
-            int index = _discs.FindIndex(disc => disc.Code == code);
+            var index = _discs.FindIndex(disc => disc.Code == code);
             if (index >= 0) _selected = index;
         }
         Select(_selected);
     }
 
-    private void FocusNext(int direction) =>
-        _focus = (_focus + direction + Labels.Length) % Labels.Length;
+    private void FocusNext(int direction) => _focus = (_focus + direction + Labels.Length) % Labels.Length;
 
     private void Switch(Screen next) {
         _screen = next;
@@ -325,7 +319,7 @@ internal sealed class CatalogApp {
     private void Draw() {
         _canvas.BeginFrame();
 
-        string title = _screen switch {
+        var title = _screen switch {
             Screen.Catalog => "КАТАЛОГ ДИСКІВ",
             Screen.Editor => _originalCode is null ? "ДОДАТИ ДИСК" : "РЕДАГУВАТИ ДИСК",
             _ => "ПІДТВЕРДЖЕННЯ ВИДАЛЕННЯ"
@@ -348,28 +342,27 @@ internal sealed class CatalogApp {
             _statusIsError ? ConsoleColor.Yellow : ConsoleColor.Green);
         _canvas.Render();
 
-        if (_screen == Screen.Editor && _editing) {
-            int firstVisible = Math.Max(0, _caret - FieldWidth + 1);
-            _canvas.ShowCaret(7 + _focus * 3, 24 + _caret - firstVisible);
-        }
+        if (_screen != Screen.Editor || !_editing) return;
+        var firstVisible = Math.Max(0, _caret - FieldWidth + 1);
+        _canvas.ShowCaret(7 + _focus * 3, 24 + _caret - firstVisible);
     }
 
     private void DrawCatalog() {
         _canvas.Put(4, 2, "Код   Тема                Назва                    Рік  Вартість", ConsoleColor.White);
         _canvas.Put(4, 68, "ПОЛЯ ВИБРАНОГО ДИСКА", ConsoleColor.White);
-        for (int y = 4; y <= 20; y++) _canvas.Put(y, 66, "│", ConsoleColor.DarkGray);
+        for (var y = 4; y <= 20; y++) _canvas.Put(y, 66, "│", ConsoleColor.DarkGray);
         _canvas.Line(20);
 
-        for (int i = 0; i < PageSize; i++) {
-            int index = _first + i;
-            int y = 6 + i;
+        for (var i = 0; i < PageSize; i++) {
+            var index = _first + i;
+            var y = 6 + i;
             if (index >= _discs.Count) break;
 
             Disc disc = _discs[index];
-            bool active = index == _selected;
+            var active = index == _selected;
             if (active) _canvas.Fill(y, 1, 64, ConsoleColor.Black, ConsoleColor.Gray);
-            string value = $"{disc.Code,5}  {Short(disc.Topic,18),-18} " +
-                           $"{Short(disc.Title,22),-22} {disc.ReleaseYear,4} {disc.Price,9:0.00}";
+            var value = $"{disc.Code,5}  {Short(disc.Topic,18),-18} " +
+                              $"{Short(disc.Title,22),-22} {disc.ReleaseYear,4} {disc.Price,9:0.00}";
             _canvas.Put(y, 2, Short(value, 63),
                 active ? ConsoleColor.Black : ConsoleColor.Gray,
                 active ? ConsoleColor.Gray : ConsoleColor.Black);
@@ -398,8 +391,8 @@ internal sealed class CatalogApp {
     private void DrawEditor() {
         _canvas.Put(4, 2, "Переміщення: ↑ ↓ / Tab. Enter або F2 — вводити текст.");
         _canvas.Put(5, 2, "У режимі вводу: ← →, Home, End, Backspace, Delete; Enter — прийняти поле.");
-        for (int i = 0; i < Labels.Length; i++) {
-            int row = 7 + i * 3;
+        for (var i = 0; i < Labels.Length; i++) {
+            var row = 7 + i * 3;
             bool active = i == _focus;
             _canvas.Put(row, 3, $"{Labels[i],-15}:", active ? ConsoleColor.Cyan : ConsoleColor.Gray);
             _canvas.Put(row, 22, "[", ConsoleColor.DarkGray);
@@ -408,8 +401,8 @@ internal sealed class CatalogApp {
                 active ? ConsoleColor.Black : ConsoleColor.White,
                 active ? ConsoleColor.Gray : ConsoleColor.DarkGray);
 
-            int start = active && _editing ? Math.Max(0, _caret - FieldWidth + 1) : 0;
-            string visible = _fields[i].Length > start ? _fields[i][start..] : "";
+            var start = active && _editing ? Math.Max(0, _caret - FieldWidth + 1) : 0;
+            var visible = _fields[i].Length > start ? _fields[i][start..] : "";
             _canvas.Put(row, 24, Short(visible, FieldWidth),
                 active ? ConsoleColor.Black : ConsoleColor.White,
                 active ? ConsoleColor.Gray : ConsoleColor.DarkGray);
@@ -425,6 +418,5 @@ internal sealed class CatalogApp {
         _canvas.Put(13, 5, "Y або Enter — так         N або Esc — ні", ConsoleColor.White);
     }
 
-    private static string Short(string text, int max) =>
-        text.Length <= max ? text : text[..Math.Max(0, max - 1)] + "…";
+    private static string Short(string text, int max) => text.Length <= max ? text : text[..Math.Max(0, max - 1)] + "…";
 }

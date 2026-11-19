@@ -5,6 +5,7 @@ using lab08.Tui;
 
 namespace lab08;
 
+
 internal static class Program {
     private static int Main() {
         Console.OutputEncoding = new UTF8Encoding(false);
