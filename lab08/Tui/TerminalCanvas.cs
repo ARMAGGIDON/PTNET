@@ -1,36 +1,36 @@
 namespace lab08.Tui;
 
-
+// Windows Terminal: окремий екран для TUI, історія PowerShell залишається недоторканою.
 internal sealed class TerminalCanvas : IDisposable {
     public const int Width = 96;
     private const int Height = 27;
     private const int MinimumWidth = 100;
     private const int MinimumHeight = 30;
-
     private const int Left = 2;
-    private int? _top;
-
-    public bool IsReserved => _top.HasValue;
-
-    public void Reserve() {
-        if (_top.HasValue || !Fits) return;
-        Console.ResetColor();
-        Console.CursorVisible = false;
-
-        if (Console.CursorLeft != 0) Console.WriteLine();
-        for (var i = 0; i <= Height; i++) Console.WriteLine();
-
-        _top = Math.Max(0, Console.CursorTop - Height - 1);
-        Invalidate();
-    }
+    private const int Top = 1;
 
     private readonly Cell[,] _current = new Cell[Height, Width];
     private readonly Cell[,] _previous = new Cell[Height, Width];
     private bool _invalidated = true;
+    private bool _disposed;
 
     private readonly record struct Cell(char Character, ConsoleColor Foreground, ConsoleColor Background);
 
     public static bool Fits => Console.WindowWidth >= MinimumWidth && Console.WindowHeight >= MinimumHeight;
+
+    public TerminalCanvas() {
+        // DECSET 1049 перемикає на альтернативний буфер, не створюючи записів у scrollback.
+        Console.Write("\u001b[?1049h\u001b[2J\u001b[H");
+        Console.CursorVisible = false;
+    }
+
+    public void ResetDisplay() {
+        // При зміні розміру вікна старе зображення може бути пошкоджене reflow.
+        Console.CursorVisible = false;
+        Console.ResetColor();
+        Console.Write("\u001b[2J\u001b[H");
+        Invalidate();
+    }
 
     public void BeginFrame() {
         for (var y = 0; y < Height; y++) {
@@ -58,13 +58,12 @@ internal sealed class TerminalCanvas : IDisposable {
 
     public void Render() {
         Console.CursorVisible = false;
-
         for (var row = 0; row < Height; row++) {
             var changed = _invalidated;
             for (var x = 0; !changed && x < Width; x++) changed = !_current[row, x].Equals(_previous[row, x]);
             if (!changed) continue;
 
-            Console.SetCursorPosition(Left, _top!.Value + row);
+            Console.SetCursorPosition(Left, Top + row);
             var offset = 0;
             while (offset < Width) {
                 var style = _current[row, offset];
@@ -89,46 +88,37 @@ internal sealed class TerminalCanvas : IDisposable {
 
     public void ShowCaret(int row, int column) {
         if (!Fits) return;
-        if (_top is null) return;
-        Console.SetCursorPosition(Left + Math.Clamp(column, 0, Width - 1), _top.Value + Math.Clamp(row, 0, Height - 1));
+        Console.SetCursorPosition(Left + Math.Clamp(column, 0, Width - 1),
+            Top + Math.Clamp(row, 0, Height - 1));
         Console.CursorVisible = true;
     }
 
     public void ShowSizeWarning() {
-        Console.CursorVisible = false;
-        Console.ResetColor();
+        ResetDisplay();
         var width = Console.WindowWidth;
         var height = Console.WindowHeight;
         if (width <= 0 || height <= 0) return;
 
-        var message = $"ПОМИЛКА: мінімальний розмір {MinimumWidth}x{MinimumHeight}; " +
-                      $"зараз {width}x{height}. Збільште вікно або натисніть Esc.";
         Console.ForegroundColor = ConsoleColor.Yellow;
-
-        if (_top is { } top) {
-            var visibleRow = Math.Clamp(top + 1, Console.WindowTop, Console.WindowTop + Console.WindowHeight - 1);
-            Console.SetCursorPosition(0, visibleRow);
-            Console.Write(message[..Math.Min(message.Length, Math.Max(0, width - 1))].PadRight(Math.Max(0, width - 1)));
-        } else {
-            Console.WriteLine(message);
-        }
-
+        WriteClipped(0, $"Недостатній розмір: {width}x{height}. Мінімум: {MinimumWidth}x{MinimumHeight}.");
+        if (height > 1) WriteClipped(1, "Збільште термінал або натисніть Esc для виходу.");
         Console.ResetColor();
-        Invalidate();
+    }
+
+    private static void WriteClipped(int row, string message) {
+        var limit = Math.Max(0, Console.WindowWidth - 1);
+        if (limit == 0) return;
+        Console.SetCursorPosition(0, row);
+        Console.Write(message[..Math.Min(message.Length, limit)]);
     }
 
     public void Invalidate() => _invalidated = true;
 
     public void Dispose() {
+        if (_disposed) return;
+        _disposed = true;
         Console.ResetColor();
+        Console.Write("\u001b[?1049l"); // Повертаємо PowerShell з його попередньою історією.
         Console.CursorVisible = true;
-        if (_top is not { } top) return;
-
-        try {
-            Console.SetCursorPosition(0, Math.Min(Console.BufferHeight - 1, top + Height));
-            Console.WriteLine();
-        } catch (ArgumentOutOfRangeException) {
-            Console.WriteLine();
-        }
     }
 }
