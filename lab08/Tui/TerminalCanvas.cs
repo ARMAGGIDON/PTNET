@@ -1,6 +1,10 @@
 namespace lab08.Tui;
 
-// Windows Terminal: окремий екран для TUI, історія PowerShell залишається недоторканою.
+/// <summary>
+/// Малює фіксовану область TUI в альтернативному буфері термінала.
+/// Порівнює поточний кадр із попереднім та переписує тільки змінені рядки.
+/// </summary>
+/// <remarks>Потрібен термінал із підтримкою ANSI/VT (зокрема Windows Terminal).</remarks>
 internal sealed class TerminalCanvas : IDisposable {
     public const int Width = 96;
     private const int Height = 27;
@@ -18,12 +22,14 @@ internal sealed class TerminalCanvas : IDisposable {
 
     public static bool Fits => Console.WindowWidth >= MinimumWidth && Console.WindowHeight >= MinimumHeight;
 
+    /// <summary>Відкриває альтернативний екран, не змінюючи історію PowerShell.</summary>
     public TerminalCanvas() {
         // DECSET 1049 перемикає на альтернативний буфер, не створюючи записів у scrollback.
         Console.Write("\u001b[?1049h\u001b[2J\u001b[H");
         Console.CursorVisible = false;
     }
 
+    /// <summary>Повністю скидає екран і кеш кадру після зміни розміру вікна.</summary>
     public void ResetDisplay() {
         // При зміні розміру вікна старе зображення може бути пошкоджене reflow.
         Console.CursorVisible = false;
@@ -32,12 +38,14 @@ internal sealed class TerminalCanvas : IDisposable {
         Invalidate();
     }
 
+    /// <summary>Створює порожній кадр; зміни стануть видимими лише після <see cref="Render"/>.</summary>
     public void BeginFrame() {
         for (var y = 0; y < Height; y++) {
             for (var x = 0; x < Width; x++) _current[y, x] = new Cell(' ', ConsoleColor.Gray, ConsoleColor.Black);
         }
     }
 
+    /// <summary>Записує текст у кадр, обрізаючи його за межами робочої області.</summary>
     public void Put(int row, int column, string text, ConsoleColor fg = ConsoleColor.Gray,
         ConsoleColor bg = ConsoleColor.Black) {
         if (row < 0 || row >= Height || string.IsNullOrEmpty(text)) return;
@@ -47,6 +55,7 @@ internal sealed class TerminalCanvas : IDisposable {
         }
     }
 
+    /// <summary>Змінює колір комірок, зберігаючи їхні символи.</summary>
     public void Fill(int row, int column, int count, ConsoleColor fg, ConsoleColor bg) {
         if (row < 0 || row >= Height) return;
         for (var x = Math.Max(0, column); x < Math.Min(Width, column + count); x++) {
@@ -54,8 +63,10 @@ internal sealed class TerminalCanvas : IDisposable {
         }
     }
 
-    public void Line(int row) => Put(row, 0, new string('─', Width), ConsoleColor.DarkGray);
-
+    /// <summary>
+    /// Оновлює лише рядки, які відрізняються від попереднього кадру.
+    /// Сусідні символи з однаковими кольорами записує одним викликом Console.Write.
+    /// </summary>
     public void Render() {
         Console.CursorVisible = false;
         for (var row = 0; row < Height; row++) {
@@ -93,6 +104,7 @@ internal sealed class TerminalCanvas : IDisposable {
         Console.CursorVisible = true;
     }
 
+    /// <summary>Показує попередження про розмір замість недоступного інтерфейсу.</summary>
     public void ShowSizeWarning() {
         ResetDisplay();
         var width = Console.WindowWidth;
@@ -114,6 +126,7 @@ internal sealed class TerminalCanvas : IDisposable {
 
     public void Invalidate() => _invalidated = true;
 
+    /// <summary>Відновлює звичайний буфер термінала й попередню історію PowerShell.</summary>
     public void Dispose() {
         if (_disposed) return;
         _disposed = true;
