@@ -5,6 +5,10 @@ using lab08.Data;
 namespace lab08.Tui;
 
 
+/// <summary>
+/// Керує консольними формами каталогу, полями введення та CRUD-операціями.
+/// Тримає лише стан UI; SQL-запити виконує <see cref="DiscRepository"/>.
+/// </summary>
 internal sealed class CatalogApp {
     private const int PageSize = 14;
     private const int FieldWidth = 53;
@@ -38,6 +42,9 @@ internal sealed class CatalogApp {
         Refresh();
     }
 
+    /// <summary>
+    /// Обробляє клавіатуру та зміну розміру термінала, перемальовуючи лише потрібні рядки.
+    /// </summary>
     public void Run() {
         var tooSmall = false;
         int lastWidth = -1, lastHeight = -1;
@@ -107,12 +114,12 @@ internal sealed class CatalogApp {
             case ConsoleKey.Home: Select(0); break;
             case ConsoleKey.End: Select(_discs.Count - 1); break;
             case ConsoleKey.A: OpenEditor(null); break;
-            case ConsoleKey.E:
+            case ConsoleKey.Spacebar:
             case ConsoleKey.Enter:
                 if (Selected is { } disc) OpenEditor(disc);
                 break;
+            case ConsoleKey.Backspace:
             case ConsoleKey.Delete:
-            case ConsoleKey.D:
                 if (Selected is { } current) {
                     _deleteCode = current.Code;
                     Switch(Screen.ConfirmDelete);
@@ -284,6 +291,7 @@ internal sealed class CatalogApp {
         KeepSelectionVisible();
     }
 
+    /// <summary>Зсуває сторінку списку тільки тоді, коли курсор виходить за її межі.</summary>
     private void KeepSelectionVisible() {
         if (_selected < _first) _first = _selected;
         if (_selected >= _first + PageSize) _first = _selected - PageSize + 1;
@@ -303,6 +311,7 @@ internal sealed class CatalogApp {
 
     private void FocusNext(int direction) => _focus = (_focus + direction + Labels.Length) % Labels.Length;
 
+    /// <summary>Змінює форму та скидає кеш попереднього зображення.</summary>
     private void Switch(Screen next) {
         _screen = next;
         _canvas.Invalidate(); // Зміна форми: переписуємо всю робочу область.
@@ -327,11 +336,12 @@ internal sealed class CatalogApp {
             Screen.Editor => _originalCode is null ? "ДОДАТИ ДИСК" : "РЕДАГУВАТИ ДИСК",
             _ => "ПІДТВЕРДЖЕННЯ ВИДАЛЕННЯ"
         };
-        _canvas.Put(0, 0, "┌" + new string('─', TerminalCanvas.Width - 2) + "┐", ConsoleColor.DarkGray);
-        _canvas.Put(1, 2, title + "   |   Лабораторна №8 / ADO.NET", ConsoleColor.Cyan);
-        _canvas.Put(2, 2, Short($"SQL: {_repository.Server} / {_repository.Database}", 91),
+        // Замість псевдографічної рамки — компактний кольоровий заголовок і рядок стану.
+        _canvas.Fill(0, 0, TerminalCanvas.Width, ConsoleColor.White, ConsoleColor.DarkBlue);
+        _canvas.Put(0, 2, title + "   |   Лабораторна №8 / ADO.NET",
+            ConsoleColor.White, ConsoleColor.DarkBlue);
+        _canvas.Put(1, 2, Short($"SQL: {_repository.Server} / {_repository.Database}", 91),
             ConsoleColor.DarkGray);
-        _canvas.Line(3);
 
         switch (_screen) {
             case Screen.Catalog: DrawCatalog(); break;
@@ -339,10 +349,9 @@ internal sealed class CatalogApp {
             case Screen.ConfirmDelete: DrawConfirmation(); break;
         }
 
-        _canvas.Line(25);
-        _canvas.Put(26, 0, "└" + new string('─', TerminalCanvas.Width - 2) + "┘", ConsoleColor.DarkGray);
+        _canvas.Fill(24, 0, TerminalCanvas.Width, ConsoleColor.White, ConsoleColor.DarkGray);
         _canvas.Put(24, 2, Short(_status, 91),
-            _statusIsError ? ConsoleColor.Yellow : ConsoleColor.Green);
+            _statusIsError ? ConsoleColor.Yellow : ConsoleColor.Green, ConsoleColor.DarkGray);
         _canvas.Render();
 
         if (_screen != Screen.Editor || !_editing) return;
@@ -351,10 +360,12 @@ internal sealed class CatalogApp {
     }
 
     private void DrawCatalog() {
-        _canvas.Put(4, 2, "Код   Тема                Назва                    Рік  Вартість", ConsoleColor.White);
-        _canvas.Put(4, 68, "ПОЛЯ ВИБРАНОГО ДИСКА", ConsoleColor.White);
-        for (var y = 4; y <= 20; y++) _canvas.Put(y, 66, "│", ConsoleColor.DarkGray);
-        _canvas.Line(20);
+        _canvas.Fill(4, 1, 64, ConsoleColor.White, ConsoleColor.DarkGray);
+        _canvas.Fill(4, 67, 28, ConsoleColor.White, ConsoleColor.DarkGray);
+        _canvas.Put(4, 2, "Код   Тема                Назва                    Рік  Вартість",
+            ConsoleColor.White, ConsoleColor.DarkGray);
+        _canvas.Put(4, 68, "ПОЛЯ ПОТОЧНОГО ДИСКА", ConsoleColor.White, ConsoleColor.DarkGray);
+        for (var y = 5; y <= 19; y++) _canvas.Put(y, 66, "│", ConsoleColor.DarkGray);
 
         for (var i = 0; i < PageSize; i++) {
             var index = _first + i;
@@ -363,12 +374,17 @@ internal sealed class CatalogApp {
 
             Disc disc = _discs[index];
             var active = index == _selected;
-            if (active) _canvas.Fill(y, 1, 64, ConsoleColor.Black, ConsoleColor.Gray);
+            // Світлий текст на темно-синьому фоні не губиться в темній темі Windows Terminal.
+            if (active) {
+                _canvas.Fill(y, 1, 64, ConsoleColor.White, ConsoleColor.DarkBlue);
+                _canvas.Put(y, 1, ">", ConsoleColor.Yellow, ConsoleColor.DarkBlue);
+            }
+
             var value = $"{disc.Code,5}  {Short(disc.Topic,18),-18} " +
-                              $"{Short(disc.Title,22),-22} {disc.ReleaseYear,4} {disc.Price,9:0.00}";
-            _canvas.Put(y, 2, Short(value, 63),
-                active ? ConsoleColor.Black : ConsoleColor.Gray,
-                active ? ConsoleColor.Gray : ConsoleColor.Black);
+                        $"{Short(disc.Title,22),-22} {disc.ReleaseYear,4} {disc.Price,9:0.00}";
+            _canvas.Put(y, 3, Short(value, 62),
+                active ? ConsoleColor.White : ConsoleColor.Gray,
+                active ? ConsoleColor.DarkBlue : ConsoleColor.Black);
         }
 
         if (_discs.Count == 0) _canvas.Put(8, 4, "Таблиця порожня. Натисніть A, щоб додати диск.", ConsoleColor.Yellow);
@@ -386,9 +402,9 @@ internal sealed class CatalogApp {
         }
 
         _canvas.Put(21, 2, $"Записів: {_discs.Count}. " +
-            (_discs.Count == 0 ? "Немає вибраного запису." : $"Вибрано: {_selected + 1} із {_discs.Count}."));
-        _canvas.Put(22, 2, "↑ ↓ / PgUp PgDn / Home End — вибір    Enter/E — редагувати    A — додати");
-        _canvas.Put(23, 2, "Del/D — видалити    R — оновити з БД    Esc — вихід");
+            (_discs.Count == 0 ? "Немає поточного запису." : $"Поточний: {_selected + 1} із {_discs.Count}."));
+        _canvas.Put(22, 2, "↑ ↓ / PgUp PgDn / Home End — навігація    Space/Enter — редагувати    A — додати");
+        _canvas.Put(23, 2, "Backspace/Delete — видалити    R — оновити з БД    Esc — вихід");
     }
 
     private void DrawEditor() {
@@ -400,15 +416,13 @@ internal sealed class CatalogApp {
             _canvas.Put(row, 3, $"{Labels[i],-15}:", active ? ConsoleColor.Cyan : ConsoleColor.Gray);
             _canvas.Put(row, 22, "[", ConsoleColor.DarkGray);
             _canvas.Put(row, 79, "]", ConsoleColor.DarkGray);
-            _canvas.Fill(row, 24, FieldWidth,
-                active ? ConsoleColor.Black : ConsoleColor.White,
-                active ? ConsoleColor.Gray : ConsoleColor.DarkGray);
+            _canvas.Fill(row, 24, FieldWidth, ConsoleColor.White,
+                active ? ConsoleColor.DarkBlue : ConsoleColor.DarkGray);
 
             var start = active && _editing ? Math.Max(0, _caret - FieldWidth + 1) : 0;
             var visible = _fields[i].Length > start ? _fields[i][start..] : "";
-            _canvas.Put(row, 24, Short(visible, FieldWidth),
-                active ? ConsoleColor.Black : ConsoleColor.White,
-                active ? ConsoleColor.Gray : ConsoleColor.DarkGray);
+            _canvas.Put(row, 24, Short(visible, FieldWidth), ConsoleColor.White,
+                active ? ConsoleColor.DarkBlue : ConsoleColor.DarkGray);
         }
 
         _canvas.Put(22, 2, "Ctrl+S — зберегти до БД    Esc — скасувати ввід / повернутися до каталогу");
