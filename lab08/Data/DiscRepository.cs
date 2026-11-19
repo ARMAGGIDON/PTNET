@@ -8,6 +8,9 @@ internal sealed class DiscRepository {
     private readonly string _connectionString;
     private readonly string _database;
 
+    public string Server { get; }
+    public string Database => _database;
+
     public DiscRepository() {
         string? configured = Environment.GetEnvironmentVariable("PTNET_LAB08_CONNECTION");
         SqlConnectionStringBuilder builder;
@@ -27,6 +30,7 @@ internal sealed class DiscRepository {
         }
 
         _database = builder.InitialCatalog;
+        Server = builder.DataSource;
         _connectionString = builder.ConnectionString;
     }
 
