@@ -29,7 +29,7 @@ internal static class Program {
             Console.ResetColor();
             Console.CursorVisible = true;
             Console.Error.WriteLine($"Помилка SQL Server ({ex.Number}): {ex.Message}");
-            Console.Error.WriteLine("Перевірте службу SQL Server та PTNET_LAB08_SERVER / PTNET_LAB08_CONNECTION.");
+            Console.Error.WriteLine(@"Перевірте доступність SQL Server LocalDB: (localdb)\MSSQLLocalDB.");
             return 2;
         } catch (Exception ex) {
             Console.ResetColor();
