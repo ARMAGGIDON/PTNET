@@ -41,30 +41,33 @@ internal sealed class CatalogApp {
     public void Run() {
         var tooSmall = false;
         int lastWidth = -1, lastHeight = -1;
+
         while (!_quit) {
             int width = Console.WindowWidth, height = Console.WindowHeight;
+            bool sizeChanged = width != lastWidth || height != lastHeight;
+            lastWidth = width;
+            lastHeight = height;
+
             if (!TerminalCanvas.Fits) {
-                if (!tooSmall || width != lastWidth || height != lastHeight) _canvas.ShowSizeWarning();
+                if (!tooSmall || sizeChanged) _canvas.ShowSizeWarning();
                 tooSmall = true;
-                lastWidth = width;
-                lastHeight = height;
                 if (Console.KeyAvailable && Console.ReadKey(intercept: true).Key == ConsoleKey.Escape) _quit = true;
                 Thread.Sleep(80);
                 continue;
             }
 
-            if (tooSmall) {
-                _canvas.Invalidate();
+            if (tooSmall || sizeChanged) {
+                _canvas.ResetDisplay();
                 _needsPaint = true;
                 tooSmall = false;
             }
 
-            if (!_canvas.IsReserved) _canvas.Reserve();
             if (_needsPaint) {
                 try {
                     Draw();
                     _needsPaint = false;
                 } catch (ArgumentOutOfRangeException) {
+                    // Консоль могла змінити розмір під час побудови кадру.
                     _canvas.Invalidate();
                 }
             }
