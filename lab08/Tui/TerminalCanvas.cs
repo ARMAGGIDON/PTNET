@@ -8,7 +8,23 @@ internal sealed class TerminalCanvas : IDisposable {
     public const int MinimumHeight = 30;
 
     private const int Left = 2;
-    private const int Top = 1;
+    // Якір задається лише після резервування чистих рядків під застосунок.
+    private int? _top;
+
+    public bool IsReserved => _top.HasValue;
+
+    public void Reserve() {
+        if (_top.HasValue || !Fits) return;
+        Console.ResetColor();
+        Console.CursorVisible = false;
+
+        // Не малюємо поверх PowerShell: спочатку прокручуємо вікно та виділяємо 28 рядків.
+        if (Console.CursorLeft != 0) Console.WriteLine();
+        for (int i = 0; i <= Height; i++) Console.WriteLine();
+
+        _top = Math.Max(0, Console.CursorTop - Height - 1);
+        Invalidate();
+    }
 
     private readonly Cell[,] _current = new Cell[Height, Width];
     private readonly Cell[,] _previous = new Cell[Height, Width];
@@ -50,7 +66,7 @@ internal sealed class TerminalCanvas : IDisposable {
             for (int x = 0; !changed && x < Width; x++) changed = !_current[row, x].Equals(_previous[row, x]);
             if (!changed) continue;
 
-            Console.SetCursorPosition(Left, Top + row);
+            Console.SetCursorPosition(Left, _top!.Value + row);
             int offset = 0;
             while (offset < Width) {
                 Cell style = _current[row, offset];
@@ -75,7 +91,9 @@ internal sealed class TerminalCanvas : IDisposable {
 
     public void ShowCaret(int row, int column) {
         if (!Fits) return;
-        Console.SetCursorPosition(Left + Math.Clamp(column, 0, Width - 1), Top + Math.Clamp(row, 0, Height - 1));
+        if (_top is null) return;
+        Console.SetCursorPosition(Left + Math.Clamp(column, 0, Width - 1),
+            _top.Value + Math.Clamp(row, 0, Height - 1));
         Console.CursorVisible = true;
     }
 
@@ -86,12 +104,21 @@ internal sealed class TerminalCanvas : IDisposable {
         int height = Console.WindowHeight;
         if (width <= 0 || height <= 0) return;
 
-        string message = $"ПОМИЛКА: мінімальний розмір консолі {MinimumWidth}x{MinimumHeight}. " +
-                         $"Зараз {width}x{height}. Збільште вікно.";
-        Console.SetCursorPosition(0, 0);
+        string message = $"ПОМИЛКА: мінімальний розмір {MinimumWidth}x{MinimumHeight}; " +
+                         $"зараз {width}x{height}. Збільште вікно або натисніть Esc.";
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.Write(message[..Math.Min(message.Length, Math.Max(0, width - 1))]
-            .PadRight(Math.Max(0, width - 1)));
+
+        if (_top is { } top) {
+            int visibleRow = Math.Clamp(top + 1, Console.WindowTop,
+                Console.WindowTop + Console.WindowHeight - 1);
+            Console.SetCursorPosition(0, visibleRow);
+            Console.Write(message[..Math.Min(message.Length, Math.Max(0, width - 1))]
+                .PadRight(Math.Max(0, width - 1)));
+        } else {
+            // До старту TUI попередження дописується ПІСЛЯ історії, не в (0,0).
+            Console.WriteLine(message);
+        }
+
         Console.ResetColor();
         Invalidate();
     }
@@ -101,8 +128,14 @@ internal sealed class TerminalCanvas : IDisposable {
     public void Dispose() {
         Console.ResetColor();
         Console.CursorVisible = true;
-        if (Console.WindowHeight > 0) {
-            Console.SetCursorPosition(0, Math.Min(Console.WindowHeight - 1, Top + Height));
+        if (_top is not { } top) return;
+
+        try {
+            // Новий prompt PowerShell з'явиться нижче за межами форми.
+            Console.SetCursorPosition(0, Math.Min(Console.BufferHeight - 1, top + Height));
+            Console.WriteLine();
+        } catch (ArgumentOutOfRangeException) {
+            // Термінал міг бути зменшений безпосередньо перед виходом.
             Console.WriteLine();
         }
     }
