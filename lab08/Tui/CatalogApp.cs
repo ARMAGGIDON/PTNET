@@ -55,12 +55,12 @@ internal sealed class CatalogApp {
             }
 
             if (tooSmall) {
-                Console.SetCursorPosition(0, 0);
-                Console.Write(new string(' ', Math.Min(width - 1, TerminalCanvas.MinimumWidth)));
                 _canvas.Invalidate();
                 _needsPaint = true;
                 tooSmall = false;
             }
+
+            if (!_canvas.IsReserved) _canvas.Reserve();
 
             if (_needsPaint) {
                 try {
@@ -332,6 +332,8 @@ internal sealed class CatalogApp {
         };
         _canvas.Put(0, 0, "┌" + new string('─', TerminalCanvas.Width - 2) + "┐", ConsoleColor.DarkGray);
         _canvas.Put(1, 2, title + "   |   Лабораторна №8 / ADO.NET", ConsoleColor.Cyan);
+        _canvas.Put(2, 2, Short($"SQL: {_repository.Server} / {_repository.Database}", 91),
+            ConsoleColor.DarkGray);
         _canvas.Line(3);
 
         switch (_screen) {
