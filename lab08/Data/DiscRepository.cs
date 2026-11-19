@@ -8,29 +8,18 @@ namespace lab08.Data;
 internal sealed class DiscRepository {
     private readonly string _connectionString;
 
-    public string Server { get; }
-    public string Database { get; }
+    public string Server => @"(localdb)\MSSQLLocalDB";
+    public string Database => "PTNET_Lab08";
 
     public DiscRepository() {
-        var configured = Environment.GetEnvironmentVariable("PTNET_LAB08_CONNECTION");
-        SqlConnectionStringBuilder builder;
-
-        if (string.IsNullOrWhiteSpace(configured)) {
-            builder = new SqlConnectionStringBuilder {
-                DataSource = Environment.GetEnvironmentVariable("PTNET_LAB08_SERVER") ?? @"(localdb)\MSSQLLocalDB",
-                InitialCatalog = "PTNET_Lab08",
-                IntegratedSecurity = true,
-                TrustServerCertificate = true,
-                ConnectTimeout = 5
-            };
-            builder["Encrypt"] = "True"; // Локальний навчальний сервер із самопідписаним сертифікатом.
-        } else {
-            builder = new SqlConnectionStringBuilder(configured);
-            if (string.IsNullOrWhiteSpace(builder.InitialCatalog)) builder.InitialCatalog = "PTNET_Lab08";
-        }
-
-        Database = builder.InitialCatalog;
-        Server = builder.DataSource;
+        var builder = new SqlConnectionStringBuilder {
+            DataSource = Server,
+            InitialCatalog = Database,
+            IntegratedSecurity = true,
+            TrustServerCertificate = true,
+            ConnectTimeout = 5
+        };
+        builder["Encrypt"] = "True";
         _connectionString = builder.ConnectionString;
     }
 
