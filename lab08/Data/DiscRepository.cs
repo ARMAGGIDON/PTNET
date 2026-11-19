@@ -4,7 +4,10 @@ using Microsoft.Data.SqlClient;
 namespace lab08.Data;
 
 
-// ADO.NET, приєднана модель: SqlConnection + SqlCommand + SqlDataReader.
+/// <summary>
+/// Здійснює CRUD-операції над dbo.Discs через приєднані об'єкти ADO.NET.
+/// SQL-логіка не залежить від способу відображення даних у консолі.
+/// </summary>
 internal sealed class DiscRepository {
     private readonly string _connectionString;
 
@@ -23,6 +26,10 @@ internal sealed class DiscRepository {
         _connectionString = builder.ConnectionString;
     }
 
+    /// <summary>
+    /// Створює базу та таблицю, якщо вони відсутні. Демонстраційні записи додає
+    /// лише під час створення таблиці, не відновлюючи навмисно видалені записи.
+    /// </summary>
     public void Initialize() {
         var masterBuilder = new SqlConnectionStringBuilder(_connectionString) { InitialCatalog = "master" };
         using (var master = new SqlConnection(masterBuilder.ConnectionString)) {
@@ -75,6 +82,7 @@ internal sealed class DiscRepository {
         transaction.Commit();
     }
 
+    /// <summary>Повертає поточний вміст таблиці за зростанням коду диска.</summary>
     public List<Disc> GetAll() {
         using var connection = Open();
         using var command = new SqlCommand("""
@@ -135,6 +143,10 @@ internal sealed class DiscRepository {
         return command.ExecuteNonQuery();
     }
 
+    /// <summary>
+    /// Передає параметри з явними типами SQL Server; для вартості фіксує
+    /// точність DECIMAL(10,2), щоб не покладатися на автоматичний висновок типу.
+    /// </summary>
     private static void AddParameters(SqlCommand command, Disc disc) {
         command.Parameters.Add("@code", SqlDbType.Int).Value = disc.Code;
         command.Parameters.Add("@topic", SqlDbType.NVarChar, 100).Value = disc.Topic;
