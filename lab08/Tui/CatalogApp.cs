@@ -250,12 +250,15 @@ internal sealed class CatalogApp {
             return;
         }
 
+        bool updating = _originalCode is not null;
         var affected = _originalCode is { } oldCode
             ? _repository.Update(oldCode, disc!)
             : _repository.Insert(disc!);
 
         Refresh(disc!.Code);
-        Message(affected == 0 ? "Запис не знайдено: оновлення не виконано." : "Запис збережено у SQL Server.");
+        Message(affected == 0
+            ? "Запис не знайдено: оновлення не виконано."
+            : updating ? $"Диск #{disc.Code} оновлено у SQL Server." : $"Диск #{disc.Code} додано до SQL Server.");
         Switch(Screen.Catalog);
     }
 
