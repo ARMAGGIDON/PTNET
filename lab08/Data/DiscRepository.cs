@@ -20,9 +20,9 @@ internal sealed class DiscRepository {
             InitialCatalog = Database,
             IntegratedSecurity = true,
             TrustServerCertificate = true,
-            ConnectTimeout = 5
+            ConnectTimeout = 5,
+            ["Encrypt"] = "True"
         };
-        builder["Encrypt"] = "True";
         _connectionString = builder.ConnectionString;
     }
 

@@ -74,8 +74,7 @@ internal sealed class CatalogApp {
                     Draw();
                     _needsPaint = false;
                 } catch (ArgumentOutOfRangeException) {
-                    // Консоль могла змінити розмір під час побудови кадру.
-                    _canvas.Invalidate();
+                    _canvas.Invalidate();  // Консоль могла змінити розмір під час побудови кадру.
                 }
             }
 
@@ -84,9 +83,7 @@ internal sealed class CatalogApp {
                 try {
                     HandleKey(key);
                 } catch (SqlException ex) {
-                    Error(ex.Number is 2601 or 2627
-                        ? "Запис із таким кодом уже існує."
-                        : $"SQL Server: {ex.Message}");
+                    Error(ex.Number is 2601 or 2627 ? "Запис із таким кодом уже існує." : $"SQL Server: {ex.Message}");
                 } catch (Exception ex) when (ex is InvalidOperationException or ArgumentException) {
                     Error(ex.Message);
                 }
@@ -356,7 +353,7 @@ internal sealed class CatalogApp {
 
         if (_screen != Screen.Editor || !_editing) return;
         var firstVisible = Math.Max(0, _caret - FieldWidth + 1);
-        _canvas.ShowCaret(7 + _focus * 3, 24 + _caret - firstVisible);
+        TerminalCanvas.ShowCaret(7 + _focus * 3, 24 + _caret - firstVisible);
     }
 
     private void DrawCatalog() {
@@ -372,7 +369,7 @@ internal sealed class CatalogApp {
             var y = 6 + i;
             if (index >= _discs.Count) break;
 
-            Disc disc = _discs[index];
+            var disc = _discs[index];
             var active = index == _selected;
             // Світлий текст на темно-синьому фоні не губиться в темній темі Windows Terminal.
             if (active) {
@@ -412,7 +409,7 @@ internal sealed class CatalogApp {
         _canvas.Put(5, 2, "У режимі вводу: ← →, Home, End, Backspace, Delete; Enter — прийняти поле.");
         for (var i = 0; i < Labels.Length; i++) {
             var row = 7 + i * 3;
-            bool active = i == _focus;
+            var active = i == _focus;
             _canvas.Put(row, 3, $"{Labels[i],-15}:", active ? ConsoleColor.Cyan : ConsoleColor.Gray);
             _canvas.Put(row, 22, "[", ConsoleColor.DarkGray);
             _canvas.Put(row, 79, "]", ConsoleColor.DarkGray);

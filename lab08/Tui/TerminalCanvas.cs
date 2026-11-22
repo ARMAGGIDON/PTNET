@@ -25,7 +25,7 @@ internal sealed class TerminalCanvas : IDisposable {
     /// <summary>Відкриває альтернативний екран, не змінюючи історію PowerShell.</summary>
     public TerminalCanvas() {
         // DECSET 1049 перемикає на альтернативний буфер, не створюючи записів у scrollback.
-        Console.Write("\u001b[?1049h\u001b[2J\u001b[H");
+        Console.Write("\e[?1049h\e[2J\e[H");
         Console.CursorVisible = false;
     }
 
@@ -34,7 +34,7 @@ internal sealed class TerminalCanvas : IDisposable {
         // При зміні розміру вікна старе зображення може бути пошкоджене reflow.
         Console.CursorVisible = false;
         Console.ResetColor();
-        Console.Write("\u001b[2J\u001b[H");
+        Console.Write("\e[2J\e[H");
         Invalidate();
     }
 
@@ -97,7 +97,7 @@ internal sealed class TerminalCanvas : IDisposable {
         _invalidated = false;
     }
 
-    public void ShowCaret(int row, int column) {
+    public static void ShowCaret(int row, int column) {
         if (!Fits) return;
         Console.SetCursorPosition(Left + Math.Clamp(column, 0, Width - 1),
             Top + Math.Clamp(row, 0, Height - 1));
@@ -131,7 +131,7 @@ internal sealed class TerminalCanvas : IDisposable {
         if (_disposed) return;
         _disposed = true;
         Console.ResetColor();
-        Console.Write("\u001b[?1049l"); // Повертаємо PowerShell з його попередньою історією.
+        Console.Write("\e[?1049l"); // Повертаємо PowerShell з його попередньою історією.
         Console.CursorVisible = true;
     }
 }
