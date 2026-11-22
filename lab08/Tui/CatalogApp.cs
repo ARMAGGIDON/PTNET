@@ -131,7 +131,9 @@ internal sealed class CatalogApp {
     }
 
     private void HandleEditorKey(ConsoleKeyInfo key) {
-        if ((key.Modifiers & ConsoleModifiers.Control) != 0 && key.Key == ConsoleKey.S) {
+        // Ctrl+S може перехоплюватися терміналом, тому F5 є незалежною альтернативою.
+        if (key.Key == ConsoleKey.F5 ||
+            ((key.Modifiers & ConsoleModifiers.Control) != 0 && key.Key == ConsoleKey.S)) {
             if (_editing) _editing = false;
             Save();
             return;
@@ -145,7 +147,11 @@ internal sealed class CatalogApp {
                     return;
                 case ConsoleKey.Enter:
                     _editing = false;
-                    _focus = (_focus + 1) % Labels.Length;
+                    if (_focus == Labels.Length - 1) {
+                        Save();
+                    } else {
+                        _focus++;
+                    }
                     return;
                 case ConsoleKey.Tab:
                     _editing = false;
@@ -406,7 +412,7 @@ internal sealed class CatalogApp {
 
     private void DrawEditor() {
         _canvas.Put(4, 2, "Переміщення: ↑ ↓ / Tab. Enter або F2 — вводити текст.");
-        _canvas.Put(5, 2, "У режимі вводу: ← →, Home, End, Backspace, Delete; Enter — прийняти поле.");
+        _canvas.Put(5, 2, "Ввід: ← →, Home, End, Backspace, Delete. Enter — далі; в останньому полі — зберегти.");
         for (var i = 0; i < Labels.Length; i++) {
             var row = 7 + i * 3;
             var active = i == _focus;
@@ -422,7 +428,7 @@ internal sealed class CatalogApp {
                 active ? ConsoleColor.DarkBlue : ConsoleColor.DarkGray);
         }
 
-        _canvas.Put(22, 2, "Ctrl+S — зберегти до БД    Esc — скасувати ввід / повернутися до каталогу");
+        _canvas.Put(22, 2, "F5 / Ctrl+S — зберегти до БД    Esc — скасувати ввід / повернутися до каталогу");
         _canvas.Put(23, 2, "Ctrl+U — очистити активне поле під час вводу    Ціна: 123.45 або 123,45");
     }
 
